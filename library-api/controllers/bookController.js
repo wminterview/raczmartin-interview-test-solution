@@ -1,5 +1,6 @@
 const response = require('../utils/response');
-const { Book } = require('../models');
+const { Book, sequelize } = require('../models');
+const { Op } = require('sequelize');
 
 // List all books
 exports.getBooks = async (req, res) => {
@@ -23,10 +24,36 @@ exports.getBooks = async (req, res) => {
 
 // Search books
 exports.searchBooks = async (req, res) => {
-  // TODO: Implement advanced search logic
-  res.json({ message: 'Search books (not implemented)' });
-};
+  const { q } = req.query;
+  const { page, limit, offset } = req.pagination;
 
+  if (!q || !q.trim()) {
+    return response.success(res, { books: [], pagination: { total: 0, page, limit, totalPages: 0 } }, 200);
+  }
+
+  const where = {
+    [Op.or]: [
+      { title: { [Op.iLike]: `%${q}%` } },
+      { author: { [Op.iLike]: `%${q}%` } },
+    ]
+  };
+
+  const { rows: books, count: total } = await Book.findAndCountAll({
+    where,
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+  });
+
+  const pagination = {
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+
+  return response.success(res, { books, pagination }, 200);
+};
 // Get book by ID
 exports.getBookById = async (req, res) => {
   const book = await Book.findByPk(req.params.id);

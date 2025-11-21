@@ -9,7 +9,7 @@ const pagination = require('../middleware/pagination');
 
 // Public routes
 router.get('/', pagination, asyncHandler(bookController.getBooks));
-router.get('/search', asyncHandler(bookController.searchBooks));
+router.get('/search', pagination, asyncHandler(bookController.searchBooks));
 router.get('/:id', asyncHandler(bookController.getBookById));
 
 // Protected routes 
