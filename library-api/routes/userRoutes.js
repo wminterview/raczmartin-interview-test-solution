@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
-// const { authenticate } = require('../middleware/authMiddleware');
-// const userController = require('../controllers/userController');
+const authenticate = require('../middleware/authMiddleware');
+const userController = require('../controllers/userController');
 
-router.get('/profile', /*authenticate,*/ (req, res) => {
-  // userController.getProfile
-  res.json({ message: 'User profile endpoint' });
-});
+router.get('/profile', authenticate, userController.getProfile);
 
 module.exports = router;
