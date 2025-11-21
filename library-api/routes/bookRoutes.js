@@ -5,9 +5,10 @@ const bookController = require('../controllers/bookController');
 const validate = require('../middleware/validate');
 const { createBookValidator } = require('../middleware/bookValidators');
 const asyncHandler = require('../utils/asyncHandler');
+const pagination = require('../middleware/pagination');
 
 // Public routes
-router.get('/', asyncHandler(bookController.getBooks));
+router.get('/', pagination, asyncHandler(bookController.getBooks));
 router.get('/search', asyncHandler(bookController.searchBooks));
 router.get('/:id', asyncHandler(bookController.getBookById));
 

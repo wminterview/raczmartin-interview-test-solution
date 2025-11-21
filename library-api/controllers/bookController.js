@@ -3,8 +3,22 @@ const { Book } = require('../models');
 
 // List all books
 exports.getBooks = async (req, res) => {
-  const books = await Book.findAll();
-  return response.success(res, { books });
+  const { page, limit, offset } = req.pagination;
+
+  const { rows: books, count: total } = await Book.findAndCountAll({
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+  });
+
+  const pagination = {
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+
+  return response.success(res, { books, pagination }, 200);
 };
 
 // Search books
