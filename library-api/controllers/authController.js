@@ -2,13 +2,14 @@ require('dotenv').config();
 const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const response = require('../utils/response');
 
 exports.register = async (req, res) => {
     const { email, password, name, role } = req.body;
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return response.error(res, [{ message: 'Email already in use' }], 'Registration failed', 400);
+      return response.error(res, 'Email already in use', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,12 +35,12 @@ exports.login = async (req, res) => {
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return response.error(res, [{ message: 'Invalid credentials' }], 'Login failed', 401);
+      return response.error(res, 'Invalid credentials', 401);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return response.error(res, [{ message: 'Invalid credentials' }], 'Login failed', 401);
+      return response.error(res, 'Invalid credentials', 401);
     }
 
     const token = jwt.sign(

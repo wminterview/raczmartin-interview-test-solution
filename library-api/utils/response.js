@@ -6,15 +6,23 @@ exports.success = (res, data = {}, status = 200) => {
   });
 };
 
-exports.error = (res, details = [], message, status = 400) => {
+exports.error = (res, message, status = 400) => {
   return res.status(status).json({
     success: false,
+    message
+  });
+};
+
+exports.validationError = (res, details = []) => {
+  return res.status(400).json({
+    success: false,
     error: {
-      message,
+      message: 'Validation failed',
       details,
     },
   });
 };
+
 
 exports.notFoundError = (res) => {
   return res.status(404).json({

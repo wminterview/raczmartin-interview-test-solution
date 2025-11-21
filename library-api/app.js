@@ -20,8 +20,7 @@ app.use((err, req, res, next) => {
   console.error(err);
   return response.error(
     res,
-    err.errors ,
-	err.message || 'Internal Server Error',
+    err.message || 'Internal Server Error',
     err.status || 500
   );
 });
