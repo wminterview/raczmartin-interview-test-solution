@@ -16,6 +16,7 @@ type BookService interface {
 	GetBook(id uint) (models.Book, error)
 	CreateBook(input CreateBookInput) (models.Book, error)
 	UpdateBook(id uint, input CreateBookInput) (models.Book, error)
+	DeleteBook(id uint) error
 }
 
 type bookService struct {
@@ -66,4 +67,12 @@ func (s *bookService) UpdateBook(id uint, input CreateBookInput) (models.Book, e
 		return models.Book{}, err
 	}
 	return updated, nil
+}
+
+func (s *bookService) DeleteBook(id uint) error {
+	// ensure it exists (so we can return not-found upstream if desired)
+	if _, err := s.bookRepository.GetByID(id); err != nil {
+		return err
+	}
+	return s.bookRepository.Delete(id)
 }

@@ -12,6 +12,7 @@ type BookRepository interface {
     GetByID(id uint) (models.Book, error)
     Create(book models.Book) (models.Book, error)
     Update(book models.Book) (models.Book, error)
+    Delete(id uint) error
 }
 
 type bookRepository struct {
@@ -64,4 +65,11 @@ func (r *bookRepository) Update(book models.Book) (models.Book, error) {
         return models.Book{}, err
     }
     return book, nil
+}
+
+func (r *bookRepository) Delete(id uint) error {
+    if err := r.db.Delete(&models.Book{}, id).Error; err != nil {
+        return err
+    }
+    return nil
 }

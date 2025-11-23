@@ -93,3 +93,19 @@ func (h *bookHandler) Update(c *gin.Context) {
 
     c.JSON(http.StatusOK, updated)
 }
+
+func (h *bookHandler) Delete(c *gin.Context) {
+    idParam := c.Param("id")
+    id64, err := strconv.ParseUint(idParam, 10, 64)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+        return
+    }
+
+    if err := h.bookService.DeleteBook(uint(id64)); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete book", "message": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "book deleted"})
+}
