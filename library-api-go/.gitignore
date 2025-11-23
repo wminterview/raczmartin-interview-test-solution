@@ -1,0 +1,18 @@
+.env
+
+# Binaries for programs and plugins
+/bin/
+
+# Vendor directory
+/vendor/
+
+# Test binary, build outputs
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# macOS
+.DS_Store
