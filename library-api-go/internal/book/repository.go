@@ -10,7 +10,8 @@ import (
 type BookRepository interface {
 	GetAll(search string) ([]models.Book, error)
     GetByID(id uint) (models.Book, error)
-	Create(book models.Book) (models.Book, error)
+    Create(book models.Book) (models.Book, error)
+    Update(book models.Book) (models.Book, error)
 }
 
 type bookRepository struct {
@@ -53,6 +54,13 @@ func (r *bookRepository) Create(book models.Book) (models.Book, error) {
 func (r *bookRepository) GetByID(id uint) (models.Book, error) {
     var book models.Book
     if err := r.db.First(&book, id).Error; err != nil {
+        return models.Book{}, err
+    }
+    return book, nil
+}
+
+func (r *bookRepository) Update(book models.Book) (models.Book, error) {
+    if err := r.db.Save(&book).Error; err != nil {
         return models.Book{}, err
     }
     return book, nil

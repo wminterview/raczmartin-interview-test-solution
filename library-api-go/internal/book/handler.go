@@ -69,3 +69,27 @@ func (h *bookHandler) Get(c *gin.Context) {
     }
     c.JSON(http.StatusOK, book)
 }
+
+func (h *bookHandler) Update(c *gin.Context) {
+    idParam := c.Param("id")
+    id64, err := strconv.ParseUint(idParam, 10, 64)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+        return
+    }
+
+    var req CreateBookRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "message": err.Error()})
+        return
+    }
+
+    updated, err := h.bookService.UpdateBook(uint(id64), CreateBookInput{Title: req.Title, Author: req.Author, ISBN: req.ISBN, Year: req.Year})
+    if err != nil {
+        // if repository returned gorm.ErrRecordNotFound it'll be propagated as error; return 404
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update book", "message": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, updated)
+}
