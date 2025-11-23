@@ -10,10 +10,11 @@ func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB) {
     bookService := NewBookService(bookRepository)    
     bookHandler := NewBookHandler(bookService)
 
-	books := r.Group("/books")
+    books := r.Group("/books")
 
     books.GET("", bookHandler.List)
     books.POST("", bookHandler.Create)
+    books.GET("/:id", bookHandler.Get)
     //books.GET("/:id", handler.GetBook)
     //books.PUT("/:id", handler.UpdateBook)
     //books.DELETE("/:id", handler.DeleteBook)

@@ -12,7 +12,8 @@ type CreateBookInput struct {
 }
 
 type BookService interface {
-	GetAllBooks() ([]models.Book, error)
+	GetAllBooks(search string) ([]models.Book, error)
+	GetBook(id uint) (models.Book, error)
 	CreateBook(input CreateBookInput) (models.Book, error)
 }
 
@@ -24,8 +25,8 @@ func NewBookService(bookRepository BookRepository) BookService {
 	return &bookService{bookRepository}
 }
 
-func (s *bookService) GetAllBooks() ([]models.Book, error) {
-	return s.bookRepository.GetAll()
+func (s *bookService) GetAllBooks(search string) ([]models.Book, error) {
+	return s.bookRepository.GetAll(search)
 }
 
 func (s *bookService) CreateBook(input CreateBookInput) (models.Book, error) {
@@ -41,4 +42,8 @@ func (s *bookService) CreateBook(input CreateBookInput) (models.Book, error) {
         return models.Book{}, err
     }
     return *&createdBook, nil
+}
+
+func (s *bookService) GetBook(id uint) (models.Book, error) {
+	return s.bookRepository.GetByID(id)
 }
