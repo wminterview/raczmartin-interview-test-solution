@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"library-api-go/internal/book"
+	"library-api-go/internal/borrowing"
+
 	"library-api-go/internal/database"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +39,7 @@ func main() {
     api := router.Group("/api") // central API prefix
 
     book.RegisterRoutes(api, db)
-    //handlers.RegisterRoutes(router, db)
+    borrowing.RegisterRoutes(api, db)
 
     port := "8080"
     if p := os.Getenv("PORT"); p != "" {

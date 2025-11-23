@@ -22,13 +22,6 @@ func NewBookHandler(bookService BookService) *bookHandler {
 	return &bookHandler{bookService}
 }
 
-func (h *bookHandler) RegisterRoutes(r *gin.Engine) {
-    books := r.Group("/books")
-    books.GET("", h.List)
-    books.POST("", h.Create)
-    books.GET(":id", h.Get)
-}
-
 func (h *bookHandler) List(c *gin.Context) {
     search := c.Query("search")
     var available *bool
