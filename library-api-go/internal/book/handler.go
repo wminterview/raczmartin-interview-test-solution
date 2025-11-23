@@ -31,7 +31,18 @@ func (h *bookHandler) RegisterRoutes(r *gin.Engine) {
 
 func (h *bookHandler) List(c *gin.Context) {
     search := c.Query("search")
-    books, err := h.bookService.GetAllBooks(search)
+    var available *bool
+    if a := c.Query("available"); a != "" {
+        if a == "true" {
+            t := true
+            available = &t
+        } else if a == "false" {
+            f := false
+            available = &f
+        }
+    }
+
+    books, err := h.bookService.GetAllBooks(search, available)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch books"})
         return
@@ -46,7 +57,7 @@ func (h *bookHandler) Create(c *gin.Context) {
         return
     }
 
-    input := CreateBookInput{Title: req.Title, Author: req.Author, ISBN: req.ISBN, Year: req.Year}
+    input := CreateBookInput(req)
     created, err := h.bookService.CreateBook(input)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create book"})
@@ -84,7 +95,7 @@ func (h *bookHandler) Update(c *gin.Context) {
         return
     }
 
-    updated, err := h.bookService.UpdateBook(uint(id64), CreateBookInput{Title: req.Title, Author: req.Author, ISBN: req.ISBN, Year: req.Year})
+    updated, err := h.bookService.UpdateBook(uint(id64), CreateBookInput(req))
     if err != nil {
         // if repository returned gorm.ErrRecordNotFound it'll be propagated as error; return 404
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update book", "message": err.Error()})

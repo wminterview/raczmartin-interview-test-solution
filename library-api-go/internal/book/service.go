@@ -12,7 +12,7 @@ type CreateBookInput struct {
 }
 
 type BookService interface {
-	GetAllBooks(search string) ([]models.Book, error)
+	GetAllBooks(search string, available *bool) ([]models.Book, error)
 	GetBook(id uint) (models.Book, error)
 	CreateBook(input CreateBookInput) (models.Book, error)
 	UpdateBook(id uint, input CreateBookInput) (models.Book, error)
@@ -27,8 +27,8 @@ func NewBookService(bookRepository BookRepository) BookService {
 	return &bookService{bookRepository}
 }
 
-func (s *bookService) GetAllBooks(search string) ([]models.Book, error) {
-	return s.bookRepository.GetAll(search)
+func (s *bookService) GetAllBooks(search string, available *bool) ([]models.Book, error) {
+	return s.bookRepository.GetAll(search, available)
 }
 
 func (s *bookService) CreateBook(input CreateBookInput) (models.Book, error) {

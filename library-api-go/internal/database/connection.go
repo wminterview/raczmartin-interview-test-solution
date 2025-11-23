@@ -10,9 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Connect opens a GORM connection to Postgres using environment variables.
 func Connect() (*gorm.DB, error) {
-    // Load .env if present (no-op if not)
     _ = godotenv.Load()
 
     host := os.Getenv("DB_HOST")

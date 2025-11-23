@@ -8,7 +8,7 @@ import (
 )
 
 type BookRepository interface {
-	GetAll(search string) ([]models.Book, error)
+    GetAll(search string, available *bool) ([]models.Book, error)
     GetByID(id uint) (models.Book, error)
     Create(book models.Book) (models.Book, error)
     Update(book models.Book) (models.Book, error)
@@ -23,20 +23,24 @@ func NewBookRepository(db *gorm.DB) BookRepository {
 	return &bookRepository{db}
 }
 
-func (r *bookRepository) GetAll(search string) ([]models.Book, error) {
+func (r *bookRepository) GetAll(search string, available *bool) ([]models.Book, error) {
     var books []models.Book
     query := r.db
 
-    // Only filter if a search query is provided
+    // Apply availability filter when provided
+    if available != nil {
+        query = query.Where("available = ?", *available)
+    }
+
+    // Only filter by search if provided
     if search != "" {
         query = query.Where(
-            "LOWER(title) LIKE ? OR LOWER(author) LIKE ?", 
-            "%"+strings.ToLower(search)+"%", 
+            "LOWER(title) LIKE ? OR LOWER(author) LIKE ?",
+            "%"+strings.ToLower(search)+"%",
             "%"+strings.ToLower(search)+"%",
         )
     }
 
-    // If search == "", this just fetches all books
     if err := query.Find(&books).Error; err != nil {
         return nil, err
     }
