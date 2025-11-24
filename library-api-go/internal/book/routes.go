@@ -3,6 +3,8 @@ package book
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"library-api-go/internal/borrowing"
 )
 
 func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB) {
@@ -17,4 +19,6 @@ func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB) {
     books.GET("/:id", bookHandler.Get)
     books.PUT("/:id", bookHandler.Update)
     books.DELETE("/:id", bookHandler.Delete)
+	
+    borrowing.RegisterBookRoutes(books, db)
 }
