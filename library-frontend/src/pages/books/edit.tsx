@@ -1,62 +1,69 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import AuthLayout from "../../layouts/AuthLayout";
 import { useNavigate, useParams } from "react-router-dom";
 import { getBook, updateBook } from "../../hooks/useBooks";
-import type { Book, FormValues } from "../../types";
+import type { FormValues } from "../../types";
 import toast from "react-hot-toast";
 import BookForm from "../../components/Books/BookForm";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function EditBookPage() {
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const { id } = params;
+  const queryClient = useQueryClient();
 
-  const [book, setBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: book,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["book", id],
+    queryFn: async () => {
+      const res = await getBook(id!);
+      return res?.data?.book ?? res?.book ?? res?.data ?? res ?? null;
+    },
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    getBook(id as string)
-      .then((res) => {
-        const payload = res?.data?.book ?? res?.book ?? res?.data ?? res;
-        if (!cancelled) setBook(payload || null);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await updateBook(String(book?.id), {
+  const updateMutation = useMutation({
+    mutationFn: async (values: FormValues) =>
+      updateBook(String(book?.id), {
         ...values,
         year: Number(values.year),
-      });
-      toast.success("Book edited");
-      if (navigate) navigate("/books");
-    } catch (e: any) {
-      toast.error(e?.message || String(e) || "Failed to edit book");
-    }
+      }),
+
+    onSuccess: () => {
+      toast.success("Book updated");
+
+      // refresh cached book + books list
+      queryClient.invalidateQueries({ queryKey: ["book", id] });
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+
+      navigate("/books");
+    },
+
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to edit book");
+    },
+  });
+
+  const onSubmit = (values: FormValues) => {
+    updateMutation.mutate(values);
   };
 
   if (!book) {
     return (
       <AuthLayout>
         <div className="p-4">
-          {loading && <div>Loading book data...</div>}
-          {error && (
-            <div className="text-red-600">Error loading book: {error}</div>
+          {isLoading && <div>Loading book data...</div>}
+          {isError && (
+            <div className="text-red-600">
+              Error loading book: {String(error)}
+            </div>
           )}
-          {!loading && !error && (
+          {!isLoading && !error && (
             <div className="text-gray-600">No book found for this id.</div>
           )}
         </div>
