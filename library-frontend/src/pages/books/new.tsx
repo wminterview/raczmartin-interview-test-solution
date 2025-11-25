@@ -6,17 +6,27 @@ import type { FormValues } from "../../types";
 import AuthLayout from "../../layouts/AuthLayout";
 import BookForm from "../../components/Books/BookForm";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function NewBookPage() {
   const navigate = useNavigate();
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await createBook({ ...values, year: Number(values.year) });
+  const queryClient = useQueryClient();
+
+  const createBookMutatin = useMutation({
+    mutationFn: (values: FormValues) =>
+      createBook({ ...values, year: Number(values.year) }),
+    onSuccess: () => {
       toast.success("Book created");
-      if (navigate) navigate("/books");
-    } catch (e: any) {
-      toast.error(e?.message || String(e) || "Failed to create book");
-    }
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+      navigate("/books");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to create book");
+    },
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    createBookMutatin.mutate(values);
   };
 
   return (
