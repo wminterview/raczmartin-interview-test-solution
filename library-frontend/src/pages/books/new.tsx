@@ -1,32 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
-import toast from "react-hot-toast";
-import { createBook } from "../../hooks/useBooks";
 import type { FormValues } from "../../types";
 import AuthLayout from "../../layouts/AuthLayout";
 import BookForm from "../../components/Books/BookForm";
-import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCreateBook } from "../../hooks/useBooks";
 
 export default function NewBookPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  const createBookMutatin = useMutation({
-    mutationFn: (values: FormValues) =>
-      createBook({ ...values, year: Number(values.year) }),
-    onSuccess: () => {
-      toast.success("Book created");
-      queryClient.invalidateQueries({ queryKey: ["books"] });
-      navigate("/books");
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || "Failed to create book");
-    },
-  });
+  const createBookMutation = useCreateBook();
 
   const onSubmit = async (values: FormValues) => {
-    createBookMutatin.mutate(values);
+    createBookMutation.mutate(values);
   };
 
   return (

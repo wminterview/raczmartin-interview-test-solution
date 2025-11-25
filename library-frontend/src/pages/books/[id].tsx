@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Book } from "../../types";
-import { deleteBook, getBook } from "../../hooks/useBooks";
-import toast from "react-hot-toast";
+import { useBook, useDeleteBook } from "../../hooks/useBooks";
 import Button from "../../components/UI/Button";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function BookDetailsPage({
   id,
@@ -12,35 +9,9 @@ export default function BookDetailsPage({
   id: string;
   navigate: (to: string) => void;
 }) {
-  const queryClient = useQueryClient();
+  const { data: book, isLoading, isError, error } = useBook(id);
 
-  const {
-    data: book,
-    isLoading,
-    isError,
-    error,
-  } = useQuery<Book | null>({
-    queryKey: ["book", id],
-    queryFn: async () => {
-      const res = await getBook(id);
-      return res?.data?.book ?? res?.book ?? res?.data ?? res ?? null;
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async () => deleteBook(id),
-    onSuccess: () => {
-      toast.success("Book deleted");
-
-      // Refresh books list
-      queryClient.invalidateQueries({ queryKey: ["books"] });
-
-      navigate("/books");
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to delete book");
-    },
-  });
+  const deleteMutation = useDeleteBook(id);
 
   if (isLoading)
     return (

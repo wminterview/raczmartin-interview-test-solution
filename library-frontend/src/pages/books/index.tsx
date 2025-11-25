@@ -1,38 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
 import type { Book } from "../../types";
 import Loading from "../../components/UI/Loading";
 import Pagination from "../../components/UI/Pagination";
 import Input from "../../components/UI/Input";
-import { getBooks } from "../../hooks/useBooks";
-import { useQuery } from "@tanstack/react-query";
 import BookList from "../../components/Books/BookList";
+import { useBooks } from "../../hooks/useBooks";
+import { useState } from "react";
 
 export default function BooksPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const pageSize = 5;
 
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
-
-  React.useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  const { data, isLoading } = useQuery<any>({
-    queryKey: ["books", page, debouncedSearch],
-    queryFn: async () => {
-      const res = await getBooks({
-        page,
-        limit: pageSize,
-        search: debouncedSearch?.trim() || undefined,
-      });
-      return res.data;
-    },
-    keepPreviousData: true,
-    staleTime: 1000 * 60,
-  } as any);
+  const { data, isLoading } = useBooks(page, pageSize, search);
 
   const books: Book[] = data?.books ?? [];
   const totalBooks: number = data?.pagination?.total ?? books.length;

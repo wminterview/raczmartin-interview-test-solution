@@ -1,64 +1,110 @@
-import { useEffect, useState } from "react";
-import type { Book, BooksResponse } from "../types";
-import * as api from "../services/api";
+import type { Book, BooksResponseData, FormValues } from "../types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createBook,
+  deleteBook,
+  getBook,
+  getBooks,
+  updateBook,
+} from "../lib/books";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
-export function useBooksList() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useBooks(page?: number, limit?: number, search?: string) {
+  return useQuery<BooksResponseData>({
+    queryKey: ["books", page, search],
+    queryFn: async () => {
+      const res = await getBooks({ page, limit, search });
+      return res.data;
+    },
+    placeholderData: (prev) => prev,
+    staleTime: 1000 * 60,
+  });
+}
 
-  useEffect(() => {
-    setLoading(true);
-    api
-      .getJSON("/books")
-      .then((res) => setBooks(res.data?.books || res))
-      .catch((err) => setError(String(err)))
-      .finally(() => setLoading(false));
-  }, []);
+export function useBook(id: string) {
+  return useQuery<Book | null>({
+    queryKey: ["book", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Missing book ID");
+      const res = await getBook(id);
+      return res?.data?.book ?? res?.book ?? res?.data ?? res ?? null;
+    },
+    enabled: !!id,
+  });
+}
 
-  return {
-    books,
-    loading,
-    error,
-    refresh: async () => {
-      setLoading(true);
-      try {
-        const res = await api.getJSON("/books");
-        setBooks(res.data?.books || res);
-      } catch (e) {
-        setError(String(e));
-      } finally {
-        setLoading(false);
+export function useCreateBook() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: (values: FormValues) =>
+      createBook({ ...values, year: Number(values.year) }),
+    onSuccess: () => {
+      toast.success("Book created");
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+      navigate("/books");
+    },
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error(String(error) || "Failed to create book");
       }
     },
-  };
+  });
 }
 
-export async function getBook(id: string) {
-  return api.getJSON(`/books/${id}`);
+export function useUpdateBook(id: string) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: async (values: FormValues) =>
+      updateBook(id, {
+        ...values,
+        year: Number(values.year),
+      }),
+
+    onSuccess: () => {
+      toast.success("Book updated");
+
+      queryClient.invalidateQueries({ queryKey: ["book", id] });
+      queryClient.invalidateQueries({ queryKey: ["books"] });
+
+      navigate("/books");
+    },
+
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error(String(error) || "Failed to create book");
+      }
+    },
+  });
 }
 
-export async function getBooks(params?: {
-  search?: string;
-  page?: number;
-  limit?: number;
-}): Promise<BooksResponse> {
-  const qs = new URLSearchParams();
-  if (params?.search) qs.set("search", params.search);
-  if (params?.page) qs.set("page", String(params.page));
-  if (params?.limit) qs.set("limit", String(params.limit));
-  const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return api.getJSON(`/books/${suffix}`);
-}
+export function useDeleteBook(id: string) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
-export async function createBook(data: Partial<Book>) {
-  return api.postJSON("/books", data);
-}
+  return useMutation({
+    mutationFn: async () => deleteBook(id),
+    onSuccess: () => {
+      toast.success("Book deleted");
 
-export async function updateBook(id: string, data: Partial<Book>) {
-  return api.putJSON(`/books/${id}`, data);
-}
+      queryClient.invalidateQueries({ queryKey: ["books"] });
 
-export async function deleteBook(id: string) {
-  return api.deleteJSON(`/books/${id}`);
+      navigate("/books");
+    },
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error(String(error) || "Failed to create book");
+      }
+    },
+  });
 }

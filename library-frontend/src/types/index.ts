@@ -58,6 +58,11 @@ export interface BooksResponse {
   message: string;
 }
 
+export interface BooksResponseData {
+  books: Book[];
+  pagination: Pagination;
+}
+
 export type FormValues = {
   title: string;
   author: string;

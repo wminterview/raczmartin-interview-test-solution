@@ -1,53 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import AuthLayout from "../../layouts/AuthLayout";
-import { useNavigate, useParams } from "react-router-dom";
-import { getBook, updateBook } from "../../hooks/useBooks";
+import { useParams } from "react-router-dom";
 import type { FormValues } from "../../types";
-import toast from "react-hot-toast";
 import BookForm from "../../components/Books/BookForm";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useBook, useUpdateBook } from "../../hooks/useBooks";
 
 export default function EditBookPage() {
-  const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const { id } = params;
-  const queryClient = useQueryClient();
 
-  const {
-    data: book,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["book", id],
-    queryFn: async () => {
-      const res = await getBook(id!);
-      return res?.data?.book ?? res?.book ?? res?.data ?? res ?? null;
-    },
-    enabled: !!id,
-  });
+  const { data: book, isLoading, isError, error } = useBook(id as string);
 
-  const updateMutation = useMutation({
-    mutationFn: async (values: FormValues) =>
-      updateBook(String(book?.id), {
-        ...values,
-        year: Number(values.year),
-      }),
-
-    onSuccess: () => {
-      toast.success("Book updated");
-
-      // refresh cached book + books list
-      queryClient.invalidateQueries({ queryKey: ["book", id] });
-      queryClient.invalidateQueries({ queryKey: ["books"] });
-
-      navigate("/books");
-    },
-
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to edit book");
-    },
-  });
+  const updateMutation = useUpdateBook(id as string);
 
   const onSubmit = (values: FormValues) => {
     updateMutation.mutate(values);
