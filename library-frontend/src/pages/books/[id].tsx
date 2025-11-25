@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
 import type { Book } from "../../types";
 import { deleteBook, getBook } from "../../hooks/useBooks";
-import { deleteJSON } from "../../services/api";
 import toast from "react-hot-toast";
 import Button from "../../components/UI/Button";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function BookDetailsPage({
   id,
@@ -13,40 +12,49 @@ export default function BookDetailsPage({
   id: string;
   navigate: (to: string) => void;
 }) {
-  const [book, setBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let cancelled = false;
+  const {
+    data: book,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Book | null>({
+    queryKey: ["book", id],
+    queryFn: async () => {
+      const res = await getBook(id);
+      return res?.data?.book ?? res?.book ?? res?.data ?? res ?? null;
+    },
+  });
 
-    getBook(id)
-      .then((res) => {
-        const payload = res?.data?.book ?? res?.book ?? res?.data ?? res;
-        if (!cancelled) setBook(payload || null);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+  const deleteMutation = useMutation({
+    mutationFn: async () => deleteBook(id),
+    onSuccess: () => {
+      toast.success("Book deleted");
 
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+      // Refresh books list
+      queryClient.invalidateQueries({ queryKey: ["books"] });
 
-  if (loading)
+      navigate("/books");
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to delete book");
+    },
+  });
+
+  if (isLoading)
     return (
       <div className="p-6">
         <div className="text-gray-600">Loading book...</div>
       </div>
     );
 
-  if (error)
-    return <div className="p-6 text-red-600">Error loading book: {error}</div>;
+  if (isError)
+    return (
+      <div className="p-6 text-red-600">
+        Error loading book: {String(error)}
+      </div>
+    );
 
   if (!book)
     return <div className="p-6 text-gray-600">No book found for this id.</div>;
@@ -104,22 +112,13 @@ export default function BookDetailsPage({
           <Button
             variant="danger"
             size="md"
-            disabled={deleting}
+            disabled={deleteMutation.isPending}
             onClick={async () => {
               const ok = window.confirm(
                 "Delete this book? This cannot be undone."
               );
               if (!ok) return;
-              try {
-                setDeleting(true);
-                await deleteBook(id);
-                toast.success("Book deleted");
-                navigate("/books");
-              } catch (err: any) {
-                toast.error(String(err?.message || err));
-              } finally {
-                setDeleting(false);
-              }
+              deleteMutation.mutate();
             }}
           >
             Delete
