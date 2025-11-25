@@ -11,11 +11,15 @@ export default function BooksPage() {
   const [search, setSearch] = useState("");
   const pageSize = 5;
 
-  const { data, isLoading } = useBooks(page, pageSize, search);
+  const { data, isLoading, isError, error } = useBooks(page, pageSize, search);
 
   const books: Book[] = data?.books ?? [];
   const totalBooks: number = data?.pagination?.total ?? books.length;
   const totalPages = Math.ceil(totalBooks / pageSize);
+
+  if (isError) {
+    return <div className="text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="flex flex-col gap-4 h-full p-4 sm:p-6">
