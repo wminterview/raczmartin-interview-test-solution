@@ -3,29 +3,30 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import Input from "../../components/UI/Input";
-import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import type { LoginBody } from "../../lib/auth";
+import { useLogin } from "../../hooks/useAuth";
 
 type FormValues = {
   email: string;
   password: string;
 };
 
-export default function LoginPage({
-  navigate,
-}: {
-  navigate?: (to: string) => void;
-}) {
-  const auth = useAuth();
+export default function LoginPage() {
+  const navigate = useNavigate();
   const { register, handleSubmit, formState } = useForm<FormValues>();
+  const loginMutation = useLogin();
 
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await auth.login(values.email, values.password);
-      toast.success("Welcome back!");
-      if (navigate) navigate("/");
-    } catch (e: any) {
-      toast.error(e?.message || String(e) || "Login failed");
-    }
+  const onSubmit = (values: LoginBody) => {
+    loginMutation.mutate(values, {
+      onSuccess: () => {
+        toast.success("Welcome back!");
+        navigate("/", { replace: true });
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Login failed");
+      },
+    });
   };
 
   return (

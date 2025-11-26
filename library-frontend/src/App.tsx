@@ -17,6 +17,7 @@ import Sidebar from "./components/Layout/Sidebar";
 import { useState } from "react";
 import RegisterPage from "./pages/auth/register";
 import EditBookPage from "./pages/books/edit";
+import { AuthGate } from "./wrappers/AuthLoader";
 
 //type Route = "/" | "/books" | string;
 
@@ -27,18 +28,20 @@ function App() {
     const nav = useNavigate();
     return (
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/books" element={<BooksPage />} />
-        <Route path="/books/new" element={<NewBookPage />} />
-        <Route
-          path="/books/:id"
-          element={<BookDetailsWithParams navigate={(to: string) => nav(to)} />}
-        />
-        <Route path="/books/edit/:id" element={<EditBookPage />} />
-        <Route
-          path="/auth/login"
-          element={<LoginPage navigate={(to: string) => nav(to)} />}
-        />
+        <Route element={<AuthGate />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/books" element={<BooksPage />} />
+          <Route path="/books/new" element={<NewBookPage />} />
+          <Route
+            path="/books/:id"
+            element={
+              <BookDetailsWithParams navigate={(to: string) => nav(to)} />
+            }
+          />
+          <Route path="/books/edit/:id" element={<EditBookPage />} />
+        </Route>
+
+        <Route path="/auth/login" element={<LoginPage />} />
         <Route
           path="/auth/register"
           element={<RegisterPage navigate={(to: string) => nav(to)} />}

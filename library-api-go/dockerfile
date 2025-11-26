@@ -1,0 +1,40 @@
+# ---------- Stage 1: Build ----------
+FROM golang:1.25.4-alpine AS builder
+
+# Set up environment
+WORKDIR /app
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+# Cache go.mod and go.sum for faster builds
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the Go binary (optimált, statikus)
+RUN go build -o /app/bin/library-api-go ./cmd
+
+# ---------- Stage 2: Final image ----------
+FROM alpine:latest
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set workdir and copy binary
+WORKDIR /app
+COPY --from=builder /app/bin/library-api-go .
+
+# Change ownership
+RUN chown appuser:appgroup library-api-go
+
+# Switch to non-root
+USER appuser
+
+# Expose port
+EXPOSE 8080
+
+# Run binary
+CMD ["./library-api-go"]

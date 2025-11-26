@@ -1,115 +1,74 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
-import * as api from "../services/api";
-import type { User } from "../types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AuthResponse } from "../types";
+import {
+  login,
+  logout,
+  signup,
+  validate,
+  type LoginBody,
+  type SignupBody,
+} from "../lib/auth";
+import { useAuthContext } from "../context/AuthContext";
+import { setApiAccessToken } from "../services/api";
 
-function setTokenCookie(
-  token: string | null,
-  maxAgeSeconds = 7 * 24 * 60 * 60
-) {
-  if (typeof document === "undefined") return;
-  if (!token) {
-    // expire cookie
-    document.cookie = `token=; Path=/; Max-Age=0; SameSite=Lax`;
-  } else {
-    document.cookie = `token=${encodeURIComponent(
-      token
-    )}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
-  }
+export function useLogin() {
+  const queryClient = useQueryClient();
+  const { setAccessToken } = useAuthContext();
+
+  return useMutation<AuthResponse, Error, LoginBody>({
+    mutationFn: login,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["auth"], data.data);
+      setAccessToken(data.data.token);
+      setApiAccessToken(data.data.token);
+    },
+  });
 }
 
-function decodeJwt(token: string) {
-  try {
-    const parts = token.split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1];
-    // base64url -> base64
-    const b = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(b);
-    return JSON.parse(json);
-  } catch (e: any) {
-    return null;
-  }
+export function useRegister() {
+  const queryClient = useQueryClient();
+  const { setAccessToken } = useAuthContext();
+
+  return useMutation<AuthResponse, Error, SignupBody>({
+    mutationFn: signup,
+    onSuccess: (data) => {
+      // store user+token in query cache
+      queryClient.setQueryData(["auth"], data.data);
+      setAccessToken(data.data.token);
+      setApiAccessToken(data.data.token);
+    },
+  });
 }
 
-export function useAuth() {
-  function getInitialUser() {
-    try {
-      const raw = localStorage.getItem("user");
-      if (raw) return JSON.parse(raw);
-    } catch {
-      /* ignore */
-    }
+export function useValidate() {
+  const { setAccessToken } = useAuthContext();
 
-    try {
-      const token = api.getToken();
-      if (!token) return null;
-      const payload = decodeJwt(token);
-      if (payload)
-        return { id: payload.id, email: payload.email, role: payload.role };
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }
+  return useQuery<AuthResponse, Error>({
+    queryKey: ["auth"],
+    queryFn: async () => {
+      const data = await validate();
+      setAccessToken(data.data.token);
+      setApiAccessToken(data.data.token);
 
-  const [user, setUser] = useState<User | null>(getInitialUser);
+      return data;
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
 
-  const login = async (email: string, password: string) => {
-    const res = await api.postJSON("/auth/login", { email, password });
-    if (res?.data?.token) {
-      const token = res.data.token;
-      try {
-        localStorage.setItem("token", token);
-      } catch {
-        /* ignore storage errors */
-      }
-      setTokenCookie(token);
-      setUser(res.data.user);
-      try {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-      } catch {
-        /* ignore storage errors */
-      }
-    }
-    return res;
-  };
+export function useLogout() {
+  const queryClient = useQueryClient();
+  const { setAccessToken } = useAuthContext();
 
-  const register = async (payload: any) => {
-    const res = await api.postJSON("/auth/register", payload);
-    if (res?.data?.token) {
-      const token = res.data.token;
-      try {
-        localStorage.setItem("token", token);
-      } catch {
-        /* ignore storage errors */
-      }
-      setTokenCookie(token);
-      setUser(res.data.user);
-      try {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-      } catch {
-        /* ignore storage errors */
-      }
-    }
-    return res;
-  };
-
-  const logout = () => {
-    try {
-      localStorage.removeItem("token");
-    } catch {
-      /* ignore storage errors */
-    }
-    try {
-      localStorage.removeItem("user");
-    } catch {
-      /* ignore storage errors */
-    }
-    setTokenCookie(null);
-    setUser(null);
-  };
-
-  return { user, login, register, logout };
+  return useMutation<{ success: boolean }, Error>({
+    mutationFn: logout,
+    onSuccess: () => {
+      setAccessToken(null);
+      setApiAccessToken(null);
+      queryClient.setQueryData(["auth"], null);
+    },
+  });
 }

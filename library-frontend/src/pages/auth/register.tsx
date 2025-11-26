@@ -2,7 +2,8 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import Input from "../../components/UI/Input";
-import { useAuth } from "../../hooks/useAuth";
+import type { SignupBody } from "../../lib/auth";
+import { useRegister } from "../../hooks/useAuth";
 
 type FormValues = {
   name: string;
@@ -15,16 +16,21 @@ export default function RegisterPage({
 }: {
   navigate?: (to: string) => void;
 }) {
-  const auth = useAuth();
-  const { register, handleSubmit, formState } = useForm<FormValues>();
+  const { mutateAsync: register, isLoading } = useRegister();
+  const {
+    register: hookFormRegister,
+    handleSubmit,
+    formState,
+  } = useForm<FormValues>();
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await auth.register({
+      const payload: SignupBody = {
         name: values.name,
         email: values.email,
         password: values.password,
-      });
+      };
+      await register(payload);
       toast.success("Account created");
       if (navigate) navigate("/");
     } catch (e: any) {
@@ -40,20 +46,23 @@ export default function RegisterPage({
         <Input
           label="Full name"
           placeholder="Jane Doe"
-          {...register("name", { required: "Name is required" })}
+          {...hookFormRegister("name", { required: "Name is required" })}
         />
         <Input
           label="Email"
           placeholder="you@example.com"
-          {...register("email", { required: "Email is required" })}
+          {...hookFormRegister("email", { required: "Email is required" })}
         />
         <Input
           label="Password"
           type="password"
           placeholder="••••••"
-          {...register("password", {
+          {...hookFormRegister("password", {
             required: "Password is required",
-            minLength: 6,
+            minLength: {
+              value: 6,
+              message: "Password must be at least 6 characters",
+            },
           })}
         />
 
@@ -61,9 +70,11 @@ export default function RegisterPage({
           <button
             type="submit"
             className="bg-green-600 text-white px-4 py-2 rounded"
-            disabled={formState.isSubmitting}
+            disabled={formState.isSubmitting || isLoading}
           >
-            {formState.isSubmitting ? "Creating..." : "Create account"}
+            {formState.isSubmitting || isLoading
+              ? "Creating..."
+              : "Create account"}
           </button>
           <a
             href="#"

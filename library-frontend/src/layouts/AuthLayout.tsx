@@ -1,20 +1,34 @@
-import React, { useEffect, type ReactNode } from "react";
-import { useAuth } from "../hooks/useAuth";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { validate } from "../lib/auth"; // your validate API function
+import type { AuthResponse } from "../types";
 
 interface AuthLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
+  // useQuery to validate the user
+  const { data, isLoading, isError } = useQuery<AuthResponse>({
+    queryKey: ["auth", "validate"],
+    queryFn: validate,
+    retry: false, // don't retry on failure
+  });
+
   useEffect(() => {
-    if (!user) {
-      navigate("/auth/login", { replace: true });
+    if (!isLoading) {
+      if (isError || !data?.data?.user) {
+        navigate("/auth/login", { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [isLoading, isError, data, navigate]);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // or a fancy spinner
+  }
 
   return <>{children}</>;
 }

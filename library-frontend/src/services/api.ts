@@ -1,27 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+let ACCESS_TOKEN: string | null = null;
 
-function getTokenFromCookie() {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(/(?:^|; )token=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-export function getToken() {
-  // prefer cookie token, fallback to localStorage
-  const cookie = getTokenFromCookie();
-  if (cookie) return cookie;
-  try {
-    return localStorage.getItem("token");
-  } catch (e: any) {
-    return null;
-  }
-}
-
-function authHeaders(): HeadersInit {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+export function setApiAccessToken(token: string | null) {
+  ACCESS_TOKEN = token;
 }
 
 async function handleRes(res: Response) {
@@ -40,32 +23,48 @@ async function handleRes(res: Response) {
 }
 
 export async function getJSON(path: string) {
-  const res = await fetch(`${BASE}${path}`, { headers: { ...authHeaders() } });
+  const headers: HeadersInit = {};
+  if (ACCESS_TOKEN) headers["Authorization"] = `Bearer ${ACCESS_TOKEN}`;
+  const res = await fetch(`${BASE}${path}`, {
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
   return handleRes(res);
 }
 
 export async function postJSON(path: string, body: any) {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (ACCESS_TOKEN) headers["Authorization"] = `Bearer ${ACCESS_TOKEN}`;
+  console.log(ACCESS_TOKEN);
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers,
     body: JSON.stringify(body),
+    credentials: "include",
   });
   return handleRes(res);
 }
 
 export async function putJSON(path: string, body: any) {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (ACCESS_TOKEN) headers["Authorization"] = `Bearer ${ACCESS_TOKEN}`;
   const res = await fetch(`${BASE}${path}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers,
     body: JSON.stringify(body),
+    credentials: "include",
   });
   return handleRes(res);
 }
 
 export async function deleteJSON(path: string) {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (ACCESS_TOKEN) headers["Authorization"] = `Bearer ${ACCESS_TOKEN}`;
   const res = await fetch(`${BASE}${path}`, {
     method: "DELETE",
-    headers: { ...authHeaders() },
+    headers,
+    credentials: "include",
   });
   return handleRes(res);
 }

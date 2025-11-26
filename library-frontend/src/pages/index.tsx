@@ -1,10 +1,26 @@
 import React from "react";
-import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useLogout, useValidate } from "../hooks/useAuth";
 
 export default function HomePage() {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const { data, isFetching } = useValidate();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (isFetching) {
+    return <div>Loading...</div>;
+  }
+
+  const user = data?.data?.user;
 
   return (
     <div className="p-6">
@@ -17,7 +33,7 @@ export default function HomePage() {
             Logged in as: <span className="font-semibold">{user.name}</span>
           </p>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
           >
             Log out
